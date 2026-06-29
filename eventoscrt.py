@@ -7,13 +7,14 @@ from datetime import datetime, time
 # Configuracao inicial da pagina com tema responsivo
 st.set_page_config(page_title="CRT-ES - Sistema de Eventos", layout="wide")
 
-# Seletor de Tema posicionado no Canto Superior Direito
-col_vazia, col_seletor = st.columns([6, 1])
+# Seletor de Tema Fixo posicionado no Canto Superior Direito (Sem permissao para digitar)
+col_vazia, col_seletor = st.columns([5.2, 1.8])
 with col_seletor:
-    tema_selecionado = st.selectbox(
+    tema_selecionado = st.radio(
         "Visualização",
         options=["Modo Claro", "Modo Escuro"],
         index=0,
+        horizontal=True,
         label_visibility="collapsed"
     )
 
@@ -61,7 +62,7 @@ def executar_query(sql, params=None, is_write=False, role="publico"):
                 else:
                     return cursor.fetchall()
     except Exception as e:
-        st.error(f"❌ Erro operacional na base de dados: {e}")
+        st.error(f"Erro operacional na base de dados: {e}")
         return None
     finally:
         conn.close()
@@ -78,12 +79,23 @@ st.markdown(f"""
         padding-bottom: 3rem;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }}
+    .main p, .main span, .main label, .main [data-testid="stMarkdownContainer"] p {{
+        color: {texto_principal} !important;
+    }}
     h1, h2, h3, h4 {{
         color: {titulo_cor} !important;
         font-weight: 700 !important;
     }}
     
-    /* Correcao Critica de Contraste e Legibilidade do Sidebar */
+    /* BLOQUEIO CRÍTICO: Impede totalmente a digitacao dentro de qualquer lista do sistema */
+    div[data-baseweb="select"] input {{
+        display: none !important;
+    }}
+    div[data-baseweb="select"] {{
+        cursor: pointer !important;
+    }}
+    
+    /* Correcao de Contraste e Legibilidade do Sidebar */
     section[data-testid="stSidebar"] {{
         background-color: {bg_sidebar} !important;
         border-right: 1px solid {borda_sidebar} !important;
@@ -96,9 +108,9 @@ st.markdown(f"""
         color: {texto_sidebar} !important;
     }}
     
+    /* Estilizacao Padrao dos Botoes Institucionais */
     div.stButton > button {{
         background-color: #1B365D !important;
-        color: #FFFFFF !important;
         border: 1px solid #1B365D !important;
         border-radius: 4px !important;
         padding: 0.6rem 2rem !important;
@@ -109,13 +121,19 @@ st.markdown(f"""
         transition: all 0.3s ease-in-out !important;
         width: auto !important;
     }}
+    div.stButton > button, div.stButton > button span {{
+        color: #FFFFFF !important;
+    }}
     div.stButton > button:hover {{
         background-color: #F2A900 !important;
-        color: #1B365D !important;
         border: 1px solid #F2A900 !important;
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15) !important;
         transform: translateY(-1px);
     }}
+    div.stButton > button:hover span {{
+        color: #1B365D !important;
+    }}
+    
     div[data-testid="stNotification"] {{
         border-left: 6px solid #F2A900 !important;
         background-color: {card_bg} !important;
@@ -250,7 +268,7 @@ role_contexto = "organizador" if "3. Painel do Organizador" in area_selecionada 
 # AREA 1: CRIACAO DO EVENTO (GESTAO)
 # ---------------------------------------------------------
 if area_selecionada == "1. Criar Evento (Gestão)":
-    st.subheader("⚙️ Painel de Gestão: Cadastrar Novo Evento")
+    st.subheader("Painel de Gestão: Cadastrar Novo Evento")
     st.write("Preencha as informações regulamentares e o período de vigência para disponibilização em portal.")
     
     with st.form("form_criacao_evento", clear_on_submit=True):
@@ -270,11 +288,11 @@ if area_selecionada == "1. Criar Evento (Gestão)":
             ["Selecione...", "CRT-ES na Escola", "Sistema CFT/CRTs", "Público Geral"]
         )
         
-        st.markdown("### 📎 Arquivos e Mídias Complementares")
+        st.markdown("### Arquivos e Mídias Complementares")
         capa_arquivo = st.file_uploader("Banner de Capa (Cabeçalho do Formulário)", type=["png", "jpg", "jpeg"])
         video_url = st.text_input("URL do Vídeo Institucional / Divulgação")
         
-        submit_evento = st.form_submit_button("✅ Publicar Evento")
+        submit_evento = st.form_submit_button("Publicar Evento")
         
         if submit_evento:
             if categoria_evento == "Selecione..." or not nome_evento:
@@ -289,13 +307,13 @@ if area_selecionada == "1. Criar Evento (Gestão)":
                 valores = (nome_evento, descricao_evento, data_inicio, data_fim, horario_inicio, horario_fim, categoria_evento, imagem_bytes, video_url)
                 
                 if executar_query(sql_inserir, valores, is_write=True, role=role_contexto):
-                    st.success(f"✅ Evento '{nome_evento}' registrado e publicado com sucesso no banco de dados.")
+                    st.success(f"Evento '{nome_evento}' registrado e publicado com sucesso no banco de dados.")
 
 # ---------------------------------------------------------
 # AREA 2: INSCRICAO (PUBLICO)
 # ---------------------------------------------------------
 elif area_selecionada == "2. Área de Inscrição (Público)":
-    st.subheader("📝 Portal Público de Inscrições em Eventos")
+    st.subheader("Portal Público de Inscrições em Eventos")
     
     sql_buscar_eventos = """
         SELECT id, nome, descricao, categoria, imagem_capa, video_url,
@@ -321,17 +339,17 @@ elif area_selecionada == "2. Área de Inscrição (Público)":
             st.image(bytes(evento_atual['imagem_capa']), use_container_width=True)
             
         if evento_atual['descricao']:
-            st.markdown(f"### 📄 Detalhes do Evento\n{evento_atual['descricao']}")
+            st.markdown(f"### Detalhes do Evento\n{evento_atual['descricao']}")
             
         if evento_atual['video_url']:
-            st.markdown("### 🎬 Material em Vídeo")
+            st.markdown("### Material em Vídeo")
             try:
                 st.video(evento_atual['video_url'])
             except:
                 st.warning("Falha na renderização do vídeo informado.")
         
         st.markdown("---")
-        st.subheader("📋 Formulário de Inscrição Obrigatório")
+        st.subheader("Formulário de Inscrição Obrigatório")
         
         lbl_nome = "Nome Completo *" if "nome" not in st.session_state.missing_fields else ":red[Nome Completo * (Campo Obrigatório)]"
         lbl_telefone = "Telefone / Celular com DDD *" if "telefone" not in st.session_state.missing_fields else ":red[Telefone / Celular com DDD * (Campo Obrigatório)]"
@@ -363,7 +381,7 @@ elif area_selecionada == "2. Área de Inscrição (Público)":
         sub_dados = {}
         
         if evento_atual["categoria"] == "CRT-ES na Escola":
-            st.markdown("#### 🏫 Informações de Vínculo Acadêmico")
+            st.markdown("#### Informações de Vínculo Acadêmico")
             sel_tipo = st.selectbox(lbl_escola_tipo, escolas_tipo, key="ins_escola_tipo")
             detalhe_escola = ""
             
@@ -404,7 +422,7 @@ elif area_selecionada == "2. Área de Inscrição (Público)":
                 sub_dados["expectativas"] = "Não se aplica"
 
         elif evento_atual["categoria"] == "Sistema CFT/CRTs":
-            st.markdown("#### 🏢 Declaração Corporativa")
+            st.markdown("#### Declaração Corporativa")
             is_func = st.radio(lbl_is_funcionario, ["Selecione...", "Sim", "Não"], key="ins_is_funcionario")
             sub_dados["is_funcionario"] = is_func
             
@@ -416,14 +434,14 @@ elif area_selecionada == "2. Área de Inscrição (Público)":
                 sub_dados["origem_sistema"] = "Público Externo ao Sistema"
 
         elif evento_atual["categoria"] == "Público Geral":
-            st.markdown("#### 💼 Identificação de Atividade Profissional")
+            st.markdown("#### Identificação de Atividade Profissional")
             sub_dados["profissao"] = st.text_input("Profissão / Cargo *", key="ins_profissao")
             sub_dados["empresa"] = st.text_input("Empresa ou Instituição de Vínculo *", key="ins_empresa")
 
         st.markdown("---")
         val_termo = st.checkbox(lbl_termo, key="ins_termo")
         
-        submit_inscricao = st.button("✅ Confirmar Minha Inscrição")
+        submit_inscricao = st.button("Confirmar Minha Inscrição")
         
         if submit_inscricao:
             erros = []
@@ -456,8 +474,7 @@ elif area_selecionada == "2. Área de Inscrição (Público)":
             
             if erros:
                 st.session_state.missing_fields = erros
-                st.error("❌ Não foi possível processar a requisição. Certifique-se de preencher todos os campos assinalados como obrigatórios.")
-                st.scroll_to_top()
+                st.error("Não foi possível processar a requisição. Certifique-se de preencher todos os campos assinalados como obrigatórios.")
             else:
                 st.session_state.missing_fields = []
                 
@@ -476,15 +493,13 @@ elif area_selecionada == "2. Área de Inscrição (Público)":
                 )
                 
                 if executar_query(sql_gravar_inscricao, valores_inscricao, is_write=True, role=role_contexto):
-                    st.success("✅ Sua inscrição foi confirmada e registrada no sistema do CRT-ES.")
-                    st.balloons()
+                    st.success("Sua inscrição foi confirmada e registrada no sistema do CRT-ES.")
 
 # ---------------------------------------------------------
 # AREA 3: PAINEL DO ORGANIZADOR (CONTROLE TOTAL)
 # ---------------------------------------------------------
 elif area_selecionada == "3. Painel do Organizador (Controle)":
-    st.subheader("📊 Painel Administrativo, Auditoria e Relatórios")
-    st.write("Gerencie eventos ativos, edite informações ou remova registros do sistema.")
+    st.subheader("Painel Administrativo, Auditoria e Relatórios")
     
     sql_buscar_todos_eventos = "SELECT id, nome, categoria, descricao, data_inicio, data_fim, horario_inicio, horario_fim, video_url FROM eventos ORDER BY id DESC;"
     todos_eventos = executar_query(sql_buscar_todos_eventos, role=role_contexto)
@@ -496,7 +511,7 @@ elif area_selecionada == "3. Painel do Organizador (Controle)":
         selecionado_str = st.selectbox("Selecione a ação sobre o respectivo evento institucional:", list(opcoes_gerenciamento.keys()))
         ev_gerenciar = opcoes_gerenciamento[selecionado_str]
         
-        tab1, tab2, tab3 = st.tabs(["👥 Lista de Inscritos Homologados", "✏️ Editar Propriedades do Evento", "🚨 Gerenciamento Avançado / Zona Crítica"])
+        tab1, tab2, tab3 = st.tabs(["Lista de Inscritos Homologados", "Editar Propriedades do Evento", "Gerenciamento Avançado / Zona Crítica"])
         
         with tab1:
             sql_buscar_inscritos = """
@@ -507,7 +522,7 @@ elif area_selecionada == "3. Painel do Organizador (Controle)":
             """
             inscritos = executar_query(sql_buscar_inscritos, (ev_gerenciar["id"],), role=role_contexto)
             
-            st.subheader(f"📋 Lista Geral de Participantes: {ev_gerenciar['nome']}")
+            st.subheader(f"Lista Geral de Participantes: {ev_gerenciar['nome']}")
             st.metric(label="Total de Inscrições Confirmadas na Base", value=len(inscritos) if inscritos else 0)
             
             if not inscritos:
@@ -518,22 +533,22 @@ elif area_selecionada == "3. Painel do Organizador (Controle)":
                     c1, c2, c3, c4 = st.columns([3, 2, 3, 1])
                     with c1:
                         st.write(f"**Nome:** {ins['nome']} (Idade: {ins['idade']})")
-                        st.caption(f"📝 Registro eletrônico: {ins['log_data_hora']}")
+                        st.caption(f"Registro eletrônico: {ins['log_data_hora']}")
                     with c2:
                         st.write(f"**CPF:** {ins['cpf']}")
                     with c3:
                         st.write(f"**Contato:** {ins['email']} / {ins['telefone']}")
-                        with st.expander("📄 Ficha Complementar"):
-                            st.json(json.loads(ins['detalhes_adicionais']) if isinstance(ins['detalhes_adicionais'], str) else ins['detalhes_adicionais'])
+                        with st.expander("Ficha Complementar"):
+                            st.json(ins['detalhes_adicionais'])
                     with c4:
-                        if st.button("❌ Remover Registro", key=f"panel_del_{ins['id']}", type="secondary"):
+                        if st.button("Remover Registro", key=f"panel_del_{ins['id']}", type="secondary"):
                             sql_deletar_ins = "DELETE FROM inscricoes WHERE id = %s;"
                             if executar_query(sql_deletar_ins, (ins['id'],), is_write=True, role=role_contexto):
-                                st.success("✅ Registro removido com sucesso.")
+                                st.success("Registro removido.")
                                 st.rerun()
                             
         with tab2:
-            st.subheader("✏️ Editar Propriedades Cronológicas e Textuais")
+            st.subheader("Editar Propriedades Cronológicas e Textuais")
             with st.form(f"form_edit_{ev_gerenciar['id']}"):
                 novo_nome = st.text_input("Alterar Nome do Evento", value=ev_gerenciar["nome"])
                 nova_desc = st.text_area("Alterar Descrição", value=ev_gerenciar["descricao"])
@@ -543,7 +558,7 @@ elif area_selecionada == "3. Painel do Organizador (Controle)":
                 novo_hr_fi = st.text_input("Alterar Horário Final", value=str(ev_gerenciar["horario_fim"]))
                 novo_video = st.text_input("Alterar Link do Vídeo", value=ev_gerenciar["video_url"])
                 
-                salvar_edicao = st.form_submit_button("✅ Confirmar Atualizações")
+                salvar_edicao = st.form_submit_button("Confirmar Atualizações")
                 if salvar_edicao:
                     sql_update = """
                         UPDATE eventos 
@@ -552,18 +567,18 @@ elif area_selecionada == "3. Painel do Organizador (Controle)":
                     """
                     params_update = (novo_nome, nova_desc, nova_data_in, nova_data_fi, novo_hr_in, novo_hr_fi, novo_video, ev_gerenciar["id"])
                     if executar_query(sql_update, params_update, is_write=True, role=role_contexto):
-                        st.success("✅ Modificações salvas com sucesso.")
+                        st.success("Modificações salvas com sucesso.")
                         st.rerun()
                     
         with tab3:
-            st.subheader("🚨 Remoção e Exclusão de Registros")
-            st.warning("⚠️ Atenção: A deleção deste evento expurgará de forma permanente o registro e o histórico de inscrições associado.")
+            st.subheader("Remoção e Exclusão de Registros")
+            st.warning("Atenção: A deleção deste evento expurgará de forma permanente o registro e o histórico de inscrições associado.")
             
             confirmar_exclusao = st.checkbox(f"Estou ciente e concordo em remover permanentemente o evento '{ev_gerenciar['nome']}'")
-            btn_deletar_tudo = st.button("🗑️ Eliminar Registro Definitivamente", type="primary", disabled=not confirmar_exclusao)
+            btn_deletar_tudo = st.button("Eliminar Registro Definitivamente", type="primary", disabled=not confirmar_exclusao)
             
             if btn_deletar_tudo:
                 sql_deletar_evento = "DELETE FROM eventos WHERE id = %s;"
                 if executar_query(sql_deletar_evento, (ev_gerenciar["id"],), is_write=True, role=role_contexto):
-                    st.error("🗑️ O evento e os dados correlatos foram expurgados da base de dados.")
+                    st.error("O evento e os dados correlatos foram expurgados da base de dados.")
                     st.rerun()
